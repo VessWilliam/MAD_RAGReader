@@ -27,7 +27,7 @@ A doc-base AI Chat Systems That answers base from PDF using RAG & Streaming LLM.
 ## Test Result 
     ##  poetry run pytest -v
     
-    ![alt text](./images/image.png)
+    ![alt text](./images/ragtest.png)
 
 
 ## Run Docker Compose 
