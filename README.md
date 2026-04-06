@@ -34,4 +34,7 @@ A doc-base AI Chat Systems That answers base from PDF using RAG & Streaming LLM.
     ## cd .\docker\
     ## docker-compose up --build 
 
+## UI Showcase
+
+![alt text](./images/ui.png)
 
