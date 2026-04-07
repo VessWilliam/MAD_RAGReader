@@ -1,5 +1,4 @@
 import os
-import re
 from pathlib import Path
 from langchain_community.document_loaders import DirectoryLoader, PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -56,9 +55,6 @@ class MainService:
             max_tokens=400,
             reasoning_effort="none",
         )
-
-    def clear_history(self, session_id: str) -> None:
-        db.clear_history(session_id)
 
     async def ask_stream(self, session_id: str, query: str):
         try:

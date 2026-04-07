@@ -4,7 +4,6 @@ from components.chat import render_chat, handle_input
 from components.sidebar import render_sidebar
 
 st.set_page_config(page_title="MAD RAG Reader", page_icon="🤖")
-
 init_state()
 
 st.title("MAD RAG Reader")

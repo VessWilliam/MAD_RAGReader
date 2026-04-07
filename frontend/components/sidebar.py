@@ -7,3 +7,13 @@ def render_sidebar():
         clear_history(st.session_state.session_id)
         st.session_state.message = []
         st.rerun()
+
+    with st.sidebar:
+        st.header("Upload PDF")
+        
+        upload_pdf = st.file_uploader("Upload PDF", type=["pdf"])
+        
+        if upload_pdf is not None:
+            st.session_state.pdf = upload_pdf
+
+  
