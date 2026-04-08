@@ -1,14 +1,15 @@
-from contextlib import asynccontextmanager
-from fastapi.responses import StreamingResponse
-from fastapi.params import Depends
-import uvicorn
-from fastapi import FastAPI, Header, File, UploadFile
-from .services import MainService
-from .repo import SQLiteDatabase
-from pydantic import BaseModel
-from .services import PDFService
-from .services import ClearService
 import asyncio
+from contextlib import asynccontextmanager
+
+import uvicorn
+from fastapi import FastAPI, File, Header, UploadFile
+from fastapi.params import Depends
+from fastapi.responses import StreamingResponse
+from pydantic import BaseModel
+from starlette.exceptions import HTTPException
+
+from .repo import SQLiteDatabase
+from .services import ClearService, MainService, PDFService
 
 db = SQLiteDatabase()
 pdf_service = PDFService()
@@ -42,9 +43,10 @@ def health():
 @app.post("/upload")
 async def upload_pdf(file: UploadFile = File(...)):
     content = await file.read()
-
-    saved_path = pdf_service.upload_pdf(content, file.filename)
-
+    try:
+        saved_path = pdf_service.upload_pdf(content, str(file.filename))
+    except FileExistsError as e:
+        return HTTPException(status_code=400, detail=str(e))
     return {"message": "File uploaded successfully", "path": saved_path}
 
 

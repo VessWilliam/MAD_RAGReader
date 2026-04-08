@@ -1,14 +1,15 @@
 import os
 from pathlib import Path
+from typing import AsyncGenerator
+
+from dotenv import load_dotenv
 from langchain_community.document_loaders import DirectoryLoader, PyPDFLoader
-from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.embeddings import FastEmbedEmbeddings
 from langchain_community.vectorstores import FAISS
 from langchain_groq import ChatGroq
-from typing import AsyncGenerator
-from dotenv import load_dotenv
-from ..repo import SQLiteDatabase
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 
+from ..repo import SQLiteDatabase
 
 load_dotenv()
 db = SQLiteDatabase()
@@ -115,7 +116,8 @@ class MainService:
         )
 
     def _load_or_build_vectorstore(self, embedding: FastEmbedEmbeddings) -> FAISS:
-        if VECTORSTORE_PATH.exists():
+        index_file = VECTORSTORE_PATH / "index.faiss"
+        if index_file.exists():
             return FAISS.load_local(
                 str(VECTORSTORE_PATH),
                 embeddings=embedding,
