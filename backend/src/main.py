@@ -3,12 +3,11 @@ from contextlib import asynccontextmanager
 
 import uvicorn
 from fastapi import FastAPI, File, Header, UploadFile
-from fastapi.params import Depends
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from starlette.exceptions import HTTPException
 
-from .repo import SQLiteDatabase
+from .database import SQLiteDatabase
 from .services import ClearService, MainService, PDFService
 
 db = SQLiteDatabase()
