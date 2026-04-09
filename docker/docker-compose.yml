@@ -20,10 +20,10 @@ services:
           "-c",
           "import urllib.request; urllib.request.urlopen('http://localhost:8000/health').getcode() == 200",
         ]
-      interval: 15s
-      timeout: 15s
+      interval: 10s
+      timeout: 5s
       retries: 5
-      start_period: 15s
+      start_period: 30s
 
   frontend:
     container_name: rag-frontend
