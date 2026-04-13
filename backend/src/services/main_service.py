@@ -13,12 +13,12 @@ class MainService:
                 "GROQ_API_KEY is not set in the environment variables."
             )
 
-        db = SQLiteDatabase()
-        embedding = FastEmbedEmbeddings()
+        self.db = SQLiteDatabase()
+        self.embedding = FastEmbedEmbeddings()
+        self.vectorstore = None
 
-        self.db = db
-        self.vectorstore = VectorStoreService().load_or_build(embeddings=embedding)
-        self.prompt_service = PromptService(db)
+        self.prompt_service = PromptService(self.db)
+
         self.llm = ChatGroq(
             api_key=GROQ_API_KEY,
             model="qwen/qwen3-32b",
@@ -26,14 +26,20 @@ class MainService:
             max_tokens=400,
             reasoning_effort="none",
         )
-
     async def ask_stream(self, session_id: str, query: str):
         try:
             if len(query.strip()) < 5:
                 yield "Please ask a more specific question related to the document."
                 return
+            
+            vectorstore = self._get_vectorstore()
+            
+            if vectorstore is None:
+                yield "No documents uploaded yet. Please upload a PDF first."
+                return
 
-            docs_with_scores = self.vectorstore.similarity_search_with_score(query, k=4)
+            docs_with_scores = vectorstore.similarity_search_with_score(query, k=4)
+            
             docs_with_scores = sorted(docs_with_scores, key=lambda x: x[1])
 
             filtered_docs = [doc for doc, score in docs_with_scores[:3] if score < 1.0]
@@ -64,7 +70,19 @@ class MainService:
             try:
                 self.db.save_message(session_id, query, full_answer)
             except Exception as e:
-                print("DB ERROR:", e)
+                print("[DB_ERROR]:", e)
+                
         except Exception as e:
-            print("LLM ERROR:", e)
+            print("[LLM ERROR]:", e)
             yield f"[ERROR] {str(e)}"
+    def _get_vectorstore(self):
+        if self.vectorstore is None:
+            try:
+                self.vectorstore = VectorStoreService().load_or_build(
+                    embeddings=self.embedding
+                )
+            except Exception as e:
+                print("[ERROR] Vectorstore not ready:", e)
+                self.vectorstore = None
+
+        return self.vectorstore

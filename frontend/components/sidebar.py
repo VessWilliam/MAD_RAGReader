@@ -7,7 +7,7 @@ def render_sidebar():
         st.header("Clear Chat History")
         if st.button("Clear History"):
             clear_history(st.session_state.session_id)
-            st.session_state.message = []
+            st.session_state.messages = []
             st.rerun()
 
         st.header("Upload PDF")

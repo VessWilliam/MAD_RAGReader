@@ -1,10 +1,9 @@
 import hashlib
-from typing import List
+from typing import List, Optional
 
 from langchain_community.document_loaders import DirectoryLoader, PyPDFLoader
 from langchain_community.embeddings import FastEmbedEmbeddings
 from langchain_community.vectorstores import FAISS
-from langchain_core._api.deprecation import T
 from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
@@ -15,16 +14,18 @@ HASH_FILE = VECTORSTORE_PATH / "data.hash"
 
 
 class VectorStoreService:
-    def load_or_build(self, embeddings: FastEmbedEmbeddings) -> FAISS:
+    def load_or_build(self, embeddings: FastEmbedEmbeddings) -> Optional[FAISS]:
         current_hash = self._compute_pdf_hash()
+        if not current_hash:
+            print("No PDFs found. Vectorstore not created.")
+            return None
+
         if self._is_vectorstore_valid(current_hash):
             return self._load(embeddings)
 
-        vectorstore = self._build(embeddings)
-        HASH_FILE.write_text(current_hash)
-        return vectorstore
+        return self._build(embeddings, current_hash)
 
-    # -- public facing helpers --
+    # -- public helpers --
     def _is_vectorstore_valid(self, current_hash: str) -> bool:
         return (
             INDEX_FILE.exists()
@@ -39,27 +40,32 @@ class VectorStoreService:
             allow_dangerous_deserialization=True,
         )
 
-    def _build(self, embedding: FastEmbedEmbeddings) -> FAISS:
-        self._validate_data_dir()
+    def _build(self, embedding: FastEmbedEmbeddings, current_hash: str) -> FAISS:
         VECTORSTORE_PATH.mkdir(parents=True, exist_ok=True)
+
         documents = self._load_documents()
+        if not documents:
+            print("[WARN] : No documents loaded.")
+            return None
+
         chunks = self._split_documents(documents)
+
         vectorstore = FAISS.from_documents(chunks, embedding)
         vectorstore.save_local(str(VECTORSTORE_PATH))
-        return vectorstore
 
-    def _validate_data_dir(self) -> None:
-        if not DATA_DIR.exists():
-            raise FileNotFoundError(f"Data directory not found at {DATA_DIR}")
-        if not list(DATA_DIR.glob("**/*.pdf")):
-            raise FileNotFoundError(f"No PDF files found in {DATA_DIR}")
+        HASH_FILE.write_text(current_hash)
+
+        return vectorstore
 
     # -- private helpers --
     def _load_documents(self) -> List[Document]:
+        if not DATA_DIR.exists():
+            return []
+
         loader = DirectoryLoader(
             str(DATA_DIR),
             glob="**/*.pdf",
-            loader_cls=PyPDFLoader,  # type: ignore[arg-type]
+            loader_cls=PyPDFLoader,
             use_multithreading=True,
         )
         return loader.load()
@@ -77,10 +83,14 @@ class VectorStoreService:
     def _compute_pdf_hash(self) -> str:
         if not DATA_DIR.exists():
             return ""
+
         files = sorted(DATA_DIR.glob("**/*.pdf"))
+        if not files:
+            return ""
 
         hashresult = hashlib.md5()
 
         for f in files:
             hashresult.update(f.read_bytes())
+
         return hashresult.hexdigest()
